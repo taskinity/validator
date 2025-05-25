@@ -1,0 +1,87 @@
+# 🏆 ANSIBLE - NAJMNIEJ KODU, NAJWIĘCEJ PROTOKOŁÓW
+# Jeden task = jeden protokół, built-in reporting
+
+---
+- name: "🎯 Ultimate Protocol Validator"
+  hosts: all
+  gather_facts: true
+  vars_files:
+    - environments/{{ env | default('dev') }}.yml
+
+  tasks:
+    # 🌐 HTTP/HTTPS (1 line per endpoint!)
+    - uri: { url: "{{ item }}", method: GET, timeout: 10 }
+      loop: "{{ http_endpoints }}"
+      register: http_results
+      failed_when: false
+
+    # 📁 FILE/NFS/SMB (1 line!)
+    - stat: { path: "{{ item }}" }
+      loop: "{{ file_paths }}"
+      register: file_results
+
+    # 💾 DATABASE (1 line per DB type!)
+    - postgresql_ping: "{{ postgres_config }}"
+      register: postgres_result
+      failed_when: false
+
+    - mysql_ping: "{{ mysql_config }}"
+      register: mysql_result
+      failed_when: false
+
+    - mongodb_ping: "{{ mongo_config }}"
+      register: mongo_result
+      failed_when: false
+
+    # 🔌 NETWORK SERVICES (1 line per service!)
+    - wait_for: { host: "{{ item.host }}", port: "{{ item.port }}", timeout: 5 }
+      loop: "{{ network_services }}"
+      register: network_results
+      failed_when: false
+
+    # 📧 EMAIL SMTP (1 line!)
+    - mail: { to: test@example.com, subject: "Test", dry_run: true, **smtp_config }
+      register: smtp_result
+      failed_when: false
+
+    # 📡 FTP/SFTP (1 line!)
+    - command: "curl -f ftp://{{ ftp_host }}:{{ ftp_port }}/"
+      register: ftp_result
+      failed_when: false
+
+    # ☁️ CLOUD SERVICES (1 line per cloud!)
+    - aws_s3: { bucket: "{{ s3_bucket }}", mode: list }
+      register: aws_result
+      failed_when: false
+
+    - azure_rm_storageaccount_info: { resource_group: "{{ rg }}" }
+      register: azure_result
+      failed_when: false
+
+    # 🔐 LDAP/AD (1 line!)
+    - ldap_search: { dn: "{{ ldap_dn }}", **ldap_config }
+      register: ldap_result
+      failed_when: false
+
+    # 📊 MESSAGE QUEUES (1 line per queue!)
+    - rabbitmq_queue: { name: test, state: present, **rabbitmq_config }
+      register: rabbitmq_result
+      failed_when: false
+
+    # 🚀 CONTAINER SERVICES (1 line!)
+    - docker_container_info: { name: "{{ item }}" }
+      loop: "{{ containers }}"
+      register: docker_results
+      failed_when: false
+
+    # 🎯 KUBERNETES (1 line!)
+    - k8s_info: { api_version: v1, kind: Pod, namespace: default }
+      register: k8s_result
+      failed_when: false
+
+    # 📊 GENERATE RICH HTML REPORT (1 task!)
+    - template:
+        src: ultimate_report.j2
+        dest: "./reports/validation_{{ ansible_date_time.epoch }}.html"
+      delegate_to: localhost
+
