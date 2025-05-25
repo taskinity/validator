@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>🔍 Endpoint Validation Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .success { color: green; }
+        .error { color: red; }
+        .warning { color: orange; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+<h1>🔍 Endpoint Validation Report</h1>
+<p><strong>Generated:</strong> {{ validation_timestamp }}</p>
+<p><strong>Host:</strong> {{ inventory_hostname }}</p>
+
+<h2>🌐 HTTP Endpoints</h2>
+<table>
+    <tr><th>Endpoint</th><th>Status</th><th>Response Time</th></tr>
+    {% for result in http_results.results %}
+        <tr>
+            <td>{{ result.item.url }}</td>
+            <td class="{% if result.status == 200 %}success{% else %}error{% endif %}">
+                {% if result.status == 200 %}✅ {{ result.status }}{% else %}❌ {{ result.status | default('Failed') }}{% endif %}
+            </td>
+            <td>{{ result.elapsed | default('N/A') }}s</td>
+        </tr>
+    {% endfor %}
+</table>
+
+<h2>📁 Directory Checks</h2>
+<table>
+    <tr><th>Path</th><th>Status</th><th>Permissions</th></tr>
+    {% for result in directory_results.results %}
+        <tr>
+            <td>{{ result.item }}</td>
+            <td class="{% if result.stat.exists %}success{% else %}error{% endif %}">
+                {% if result.stat.exists %}✅ Exists{% else %}❌ Not Found{% endif %}
+            </td>
+            <td>{{ result.stat.mode | default('N/A') }}</td>
+        </tr>
+    {% endfor %}
+</table>
+
+<h2>🔌 Network Services</h2>
+<table>
+    <tr><th>Service</th><th>Host:Port</th><th>Status</th></tr>
+    {% for result in network_results.results %}
+        <tr>
+            <td>{{ result.item.name }}</td>
+            <td>{{ result.item.host }}:{{ result.item.port }}</td>
+            <td class="{% if not result.failed %}success{% else %}error{% endif %}">
+                {% if not result.failed %}✅ Connected{% else %}❌ Failed{% endif %}
+            </td>
+        </tr>
+    {% endfor %}
+</table>
+</body>
+</html>

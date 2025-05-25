@@ -1,0 +1,100 @@
+
+---
+- name: "🔍 Endpoint Validation Playbook"
+  hosts: localhost
+  gather_facts: false
+  vars:
+    endpoints:
+      - name: "API Health Check"
+        url: "{{ api_host | default('https://httpbin.org') }}/status/200"
+        method: GET
+        expected_status: 200
+
+      - name: "GitHub API"
+        url: "https://api.github.com"
+        method: GET
+        expected_status: 200
+
+      - name: "Internal Service"
+        url: "{{ internal_api | default('http://localhost:8080') }}/health"
+        method: GET
+        expected_status: 200
+
+    directories:
+      - "{{ input_dir | default('/tmp/input') }}"
+      - "{{ output_dir | default('/tmp/output') }}"
+      - "{{ error_dir | default('/tmp/error') }}"
+
+    network_services:
+      - { host: "{{ smtp_host | default('localhost') }}", port: "{{ smtp_port | default(25) }}", name: "SMTP" }
+      - { host: "{{ ftp_host | default('localhost') }}", port: "{{ ftp_port | default(21) }}", name: "FTP" }
+      - { host: "{{ db_host | default('localhost') }}", port: "{{ db_port | default(5432) }}", name: "PostgreSQL" }
+      - { host: "{{ redis_host | default('localhost') }}", port: "{{ redis_port | default(6379) }}", name: "Redis" }
+
+  tasks:
+    # 🌐 HTTP/HTTPS Endpoints
+    - name: "🌐 Validate HTTP endpoints"
+      uri:
+        url: "{{ item.url }}"
+        method: "{{ item.method | default('GET') }}"
+        timeout: 10
+        status_code: "{{ item.expected_status | default(200) }}"
+      loop: "{{ endpoints }}"
+      register: http_results
+      failed_when: false
+      tags: [http, web]
+
+    # 📁 File System Checks
+    - name: "📁 Validate directories exist"
+      stat:
+        path: "{{ item }}"
+      loop: "{{ directories }}"
+      register: directory_results
+      tags: [filesystem, dirs]
+
+    # 🔌 Network Services (TCP ports)
+    - name: "🔌 Validate network services"
+      wait_for:
+        host: "{{ item.host }}"
+        port: "{{ item.port }}"
+        timeout: 5
+        state: started
+      loop: "{{ network_services }}"
+      register: network_results
+      failed_when: false
+      tags: [network, tcp]
+
+    # 💾 Database Connection (PostgreSQL example)
+    - name: "💾 Validate PostgreSQL connection"
+      postgresql_ping:
+        login_host: "{{ db_host | default('localhost') }}"
+        login_port: "{{ db_port | default(5432) }}"
+        login_user: "{{ db_user | default('postgres') }}"
+        login_password: "{{ db_password | default('') }}"
+        login_db: "{{ db_name | default('postgres') }}"
+      register: db_result
+      failed_when: false
+      when: db_host is defined
+      tags: [database, postgres]
+
+    # 📊 Generate Validation Report
+    - name: "📊 Generate validation report"
+      template:
+        src: validation_report.j2
+        dest: "./validation_report_{{ ansible_date_time.epoch }}.html"
+      vars:
+        validation_timestamp: "{{ ansible_date_time.iso8601 }}"
+      tags: [report]
+
+    # 📋 Display Results Summary
+    - name: "📋 Display validation summary"
+      debug:
+        msg: |
+          🎯 ENDPOINT VALIDATION SUMMARY
+          ================================
+          ✅ HTTP Endpoints: {{ http_results.results | selectattr('status', 'equalto', 200) | list | length }}/{{ endpoints | length }}
+          ✅ Directories: {{ directory_results.results | selectattr('stat.exists', 'equalto', true) | list | length }}/{{ directories | length }}
+          ✅ Network Services: {{ network_results.results | rejectattr('failed', 'equalto', true) | list | length }}/{{ network_services | length }}
+          
+          ⏱️  Validation completed at: {{ ansible_date_time.iso8601 }}
+          📄 Report saved: validation_report_{{ ansible_date_time.epoch }}.html

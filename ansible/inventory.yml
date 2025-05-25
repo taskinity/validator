@@ -1,0 +1,25 @@
+---
+all:
+  children:
+    production:
+      hosts:
+        prod-server-01:
+          ansible_host: 10.0.1.10
+          api_host: https://api.production.com
+          db_host: db.production.com
+        prod-server-02:
+          ansible_host: 10.0.1.11
+
+    staging:
+      hosts:
+        staging-server:
+          ansible_host: 10.0.2.10
+          api_host: https://api.staging.com
+          db_host: db.staging.com
+
+    development:
+      hosts:
+        localhost:
+          ansible_connection: local
+          api_host: http://localhost:8080
+          db_host: localhost
