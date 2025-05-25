@@ -1,0 +1,26 @@
+services:
+  camel-validator:
+    build: .
+    ports:
+      - "8080:8080"  # Hawtio
+      - "9090:9090"  # Health check
+    volumes:
+      - ./data:/app/data
+    environment:
+      - SMTP_HOST=mailhog
+      - FTP_HOST=ftpserver
+      - DB_HOST=postgres
+
+  mailhog:
+    image: mailhog/mailhog
+    ports: [ "1025:1025", "8025:8025" ]
+
+  ftpserver:
+    image: stilliard/pure-ftpd
+    ports: [ "21:21" ]
+
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_PASSWORD: testpass
+    ports: [ "5432:5432" ]

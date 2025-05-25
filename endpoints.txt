@@ -1,0 +1,6 @@
+file:${INPUT_DIR:/tmp/input}?noop=true
+file:${OUTPUT_DIR:/tmp/output}
+smtp://${SMTP_HOST:localhost}:${SMTP_PORT:25}
+http://${API_HOST:httpbin.org}/status/200
+ftp://${FTP_HOST:localhost}:${FTP_PORT:21}
+kafka:${KAFKA_HOST:localhost}:${KAFKA_PORT:9092}
